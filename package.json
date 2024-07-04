@@ -1,0 +1,19 @@
+{
+  "name": "showcase_backend",
+  "version": "1.0.0",
+  "description": "Showcase project backend",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "prod": "node server.js",
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "author": "Antoine ROBIN",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "nodemon": "^3.1.0"
+  }
+}
