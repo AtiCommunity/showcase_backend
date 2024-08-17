@@ -5,8 +5,7 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "prod": "node server.js",
-    "test": "echo \"No test specified\" && exit 0"
+    "start": "node server.js"
   },
   "author": "Antoine ROBIN",
   "license": "ISC",
