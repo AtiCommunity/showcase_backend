@@ -1,3 +1,5 @@
+const bcrypt = require('bcrypt')
+
 const User = require('../models/user.models')
 
 exports.register = async (req, res) => {
@@ -5,11 +7,12 @@ exports.register = async (req, res) => {
         firstname: req.body.firstname,
         lastname: req.body.lastname,
         email: req.body.email,
-        password: req.body.password,
+        password: bcrypt.hashSync(req.body.password, 10),
     })
     try {
         await newUser.save()
     } catch (error) {
+        console.log(error.message)
         if (error.name === "ValidationError") {
             let errors = {};
 
@@ -18,6 +21,9 @@ exports.register = async (req, res) => {
             });
 
             return res.status(400).json(errors);
+        }
+        if (error.name === "MongoServerError") {
+            return res.status(400).json({ message: error.message });
         }
         return res.status(500).json({ message: "Something went wrong!" });
     }
