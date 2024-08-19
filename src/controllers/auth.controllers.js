@@ -4,7 +4,22 @@ const jwt = require('jsonwebtoken')
 const User = require('../models/user.models')
 
 exports.authenticate = async (req, res) => {
-    res.send("OK")
+    try {
+        if (!req.headers["authorization"]) {
+            return res.status(401).json({ error: "Authorization header is missing!" })
+        }
+        token = req.headers["authorization"]
+        if (token.includes("Bearer")) token = token.substring(7)
+        jwt.verify(token, process.env.JWT_KEY, (error, decoded) => {
+            if (error != null) {
+                return res.status(401).json({ error: error })
+            }
+            return res.status(200).json({ data: decoded })
+        })
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({ error: error.message });
+    }
 }
 
 exports.register = async (req, res) => {
@@ -35,7 +50,9 @@ exports.login = async (req, res) => {
         if (user == null || !bcrypt.compareSync(req.body.password, user.password)) {
             return res.status(401).json({ error: "invalid credentials" })
         }
-        return res.status(200).json({ token: jwt.sign({ type: user._id, exp: Math.floor(Date.now() / 1000) + 86400 }, process.env.JWT_KEY) })
+        return res.status(200).json({
+            token: jwt.sign({ id: user._id }, process.env.JWT_KEY)
+        })
     } catch (error) {
         console.log(error)
         return res.status(400).json({ error: error.message });
