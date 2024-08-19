@@ -22,6 +22,24 @@ exports.authenticate = async (req, res) => {
     }
 }
 
+exports.login = async (req, res) => {
+    try {
+        if (req.body == 0) {
+            return res.status(400).json({ error: `no request body` })
+        }
+        const user = await User.findOne({ email: req.body.email })
+        if (user == null || !bcrypt.compareSync(req.body.password, user.password)) {
+            return res.status(401).json({ error: "invalid credentials" })
+        }
+        return res.status(200).json({
+            token: jwt.sign({ id: user._id }, process.env.JWT_KEY)
+        })
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({ error: error.message });
+    }
+}
+
 exports.register = async (req, res) => {
     try {
         if (req.body == 0) {
@@ -35,24 +53,6 @@ exports.register = async (req, res) => {
         })
         await newUser.save()
         return res.status(200).json(newUser)
-    } catch (error) {
-        console.log(error)
-        return res.status(400).json({ error: error.message });
-    }
-}
-
-exports.login = async (req, res) => {
-    try {
-        if (req.body == 0) {
-            return res.status(400).json({ error: `no request body` })
-        }
-        const user = await User.findOne({ email: req.body.email })
-        if (user == null || !bcrypt.compareSync(req.body.password, user.password)) {
-            return res.status(401).json({ error: "invalid credentials" })
-        }
-        return res.status(200).json({
-            token: jwt.sign({ id: user._id }, process.env.JWT_KEY)
-        })
     } catch (error) {
         console.log(error)
         return res.status(400).json({ error: error.message });
