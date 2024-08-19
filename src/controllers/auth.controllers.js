@@ -1,77 +1,43 @@
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 
 const User = require('../models/user.models')
 
+exports.authenticate = async (req, res) => {
+    res.send("OK")
+}
+
 exports.register = async (req, res) => {
     try {
+        if (req.body == 0) {
+            return res.status(400).json({ error: `no request body` })
+        }
         const newUser = new User({
-            firstname: req.body.firstname,
-            lastname: req.body.lastname,
-            email: req.body.email,
-            password: bcrypt.hashSync(req.body.password, 10),
+            firstname: req.body.firstname ? req.body.firstname : "",
+            lastname: req.body.lastname ? req.body.lastname : "",
+            email: req.body.email ? req.body.email : "",
+            password: req.body.password ? bcrypt.hashSync(req.body.password, 10) : "",
         })
         await newUser.save()
         return res.status(200).json(newUser)
     } catch (error) {
         console.log(error)
-        return res.status(400).json({ message: error.message });
+        return res.status(400).json({ error: error.message });
     }
 }
 
-exports.login = (req, res) => {
-    res.send("OK")
-}
-
-exports.getUsers = async (req, res) => {
+exports.login = async (req, res) => {
     try {
-        if (!req.params.id) {
-            return res.status(200).json(await User.find())
-        }
-        const getUser = await User.findOne({ _id: req.params.id })
-        if (getUser == null) {
-            return res.status(404).json({ error: `user ${req.params.id} not found` })
-        }
-        return res.status(200).json(getUser)
-    }
-    catch (error) {
-        console.log(error)
-        return res.status(400).json({ error: error.message })
-    }
-}
-
-exports.putUsers = async (req, res) => {
-    try {
-        var getUser = await User.findOne({ _id: req.params.id })
-        if (getUser == null) {
-            return res.status(404).json({ error: `user ${req.params.id} not found` })
-        }
         if (req.body == 0) {
             return res.status(400).json({ error: `no request body` })
         }
-        if (req.body.password != null) {
-            req.body.password = bcrypt.hashSync(req.body.password, 10)
+        const user = await User.findOne({ email: req.body.email })
+        if (user == null || !bcrypt.compareSync(req.body.password, user.password)) {
+            return res.status(401).json({ error: "invalid credentials" })
         }
-        await User.updateOne(getUser, req.body)
-        getUser = await User.findOne({ _id: req.params.id })
-        return res.status(200).json(getUser)
-    }
-    catch (error) {
+        return res.status(200).json({ token: jwt.sign({ type: user._id, exp: Math.floor(Date.now() / 1000) + 86400 }, process.env.JWT_KEY) })
+    } catch (error) {
         console.log(error)
-        return res.status(400).json({ error: error.message })
-    }
-}
-
-exports.deleteUsers = async (req, res) => {
-    try {
-        const getUser = await User.findOne({ _id: req.params.id })
-        if (getUser == null) {
-            return res.status(404).json({ error: `user ${req.params.id} not found` })
-        }
-        await User.deleteOne(getUser)
-        return res.status(200).json(getUser)
-    }
-    catch (error) {
-        console.log(error)
-        return res.status(400).json({ error: error.message })
+        return res.status(400).json({ error: error.message });
     }
 }
