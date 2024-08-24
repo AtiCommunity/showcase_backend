@@ -3,33 +3,37 @@ const jwt = require('jsonwebtoken')
 
 const User = require('../models/user.models')
 
-exports.authenticate = async (req, res) => {
+exports.authenticate = async (req, res, next) => {
     try {
-        if (!req.headers["authorization"]) {
-            return res.status(401).json({ error: "Authorization header is missing!" })
+        const header = req.headers["authorization"]
+        if (!header || !header.startsWith("Bearer ")) {
+            return res.status(401).json({ error: "Unauthorized Header. Access Denied" })
         }
-        token = req.headers["authorization"]
-        if (token.includes("Bearer")) token = token.substring(7)
+        const token = header.substring(7)
+        if (!token) {
+            return res.status(401).json({ error: "Unauthorized Token. Access Denied" })
+        }
         jwt.verify(token, process.env.JWT_KEY, (error, decoded) => {
             if (error != null) {
-                return res.status(401).json({ error: error })
+                return res.status(401).json({ error: error.message })
             }
-            return res.status(200).json({ data: decoded })
+            req.headers.id = decoded._id;
+            next();
         })
     } catch (error) {
         console.log(error)
-        return res.status(400).json({ error: error.message });
+        return res.status(401).json({ error: error.message });
     }
 }
 
 exports.login = async (req, res) => {
     try {
         if (req.body == 0) {
-            return res.status(400).json({ error: `no request body` })
+            return res.status(400).json({ error: `No request body` })
         }
         const user = await User.findOne({ email: req.body.email })
         if (user == null || !bcrypt.compareSync(req.body.password, user.password)) {
-            return res.status(401).json({ error: "invalid credentials" })
+            return res.status(401).json({ error: "Invalid credentials" })
         }
         return res.status(200).json({
             token: jwt.sign({ id: user._id }, process.env.JWT_KEY)
@@ -43,7 +47,7 @@ exports.login = async (req, res) => {
 exports.register = async (req, res) => {
     try {
         if (req.body == 0) {
-            return res.status(400).json({ error: `no request body` })
+            return res.status(400).json({ error: `No request body` })
         }
         const newUser = new User({
             firstname: req.body.firstname ? req.body.firstname : "",
